@@ -34,6 +34,7 @@
       ['🔎', 'Kod tarama', '256 komutu dene', () => Ekran.ac(Araclar.Tarama)],
       ['📥', 'Kopyala', 'Orijinal kumandayı oku', () => Ekran.ac(Araclar.Kopyala)],
       ['⌨️', 'Elle kod', 'Protokol / ham / Pronto', () => Ekran.ac(Araclar.ElleKod)],
+      ['📷', 'Fotoğraf makinesi', 'Canon EOS 650D', () => Ekran.ac(Kamera.Canon650D)],
       ['💡', 'LED şerit', '24 / 44 tuşlu', () => Ekran.ac(Araclar.LedPanel)],
       ['🛠️', 'Servis menüleri', 'Otel / servis tuşları', () => Ekran.ac(Araclar.Servis)],
       ['📄', 'İçe aktar', 'irplus dosyası', () => Araclar.iceAktar()]

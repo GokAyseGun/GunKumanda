@@ -5,6 +5,8 @@ Gün Teknik saha ekibi için evrensel kumanda uygulaması (Android) ve ESP32 IR 
 ## Ne yapar
 - **Saha kumandası (IR):** klima (65 protokol, tam kontrol paneli + "bip ile protokol bulma"), TV, uydu alıcısı,
   ses sistemi, DVR/NVR, projektör, TV box, aydınlatma (LED şerit 24/44 hazır panel), vantilatör, ısıtıcı ve diğerleri.
+- **Fotoğraf makinesi:** Canon EOS 650D (RC-6) — çek, 2 sn gecikmeli, video kaydı, zamanlayıcı, seri çekim,
+  aralıklı çekim (timelapse) ve süreli uzun pozlama (bulb). Telefonun ses tuşları deklanşör olur.
   Yaklaşık 6.900 hazır kumanda (Flipper-IRDB + irdb + irplus dönüşümleri) internetsiz çalışır.
 - **Saha araçları:** hızlı bulma (markasız açma), markanın tüm modellerini sırayla deneme, 256 komut tarama,
   kumanda kopyalama (IR modülüyle), elle kod (adres/komut, protokol, ham, Pronto), servis/otel menüleri,
