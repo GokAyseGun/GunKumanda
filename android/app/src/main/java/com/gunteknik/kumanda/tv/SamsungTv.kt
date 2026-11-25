@@ -88,7 +88,10 @@ class SamsungTv(
         .put("Cmd", if (down) "Press" else "Release").put("DataOfCmd", key)
         .put("Option", "false").put("TypeOfRemote", "SendRemoteKey"))
 
-    override fun key(name: String): Boolean = click(KEYS[name] ?: return false)
+    override fun key(name: String): Boolean {
+        val k = KEYS[name] ?: return false
+        return click(k)
+    }
 
     override fun text(s: String): Boolean {
         val ok = remote(JSONObject()
