@@ -1,0 +1,72 @@
+{
+  "_aciklama": "Türkiye pazarı düzenlemesi. build_db.py veritabanını üretirken (ve --sadele ile) bu dosyayı uygular. 'uydu_tut': uydu kategorisinde Türkiye'de satılmış/karşılaşılan, tutulacak veritabanı markaları (anahtar). 'markalar': her kategoride üstte 'Türkiye'de yaygın' olarak gösterilecek markalar (kodu olmasa da listede görünür, sahadan eklenir). 'kumandalar': internetten derlenen, sahada doğrulanacak kodlar.",
+  "uydu_tut": ["dream", "edision", "goldeninterstar", "grundig", "humax", "huawei", "kathrein", "mag",
+    "octagon", "samsung", "starsat", "strong", "technisat", "thomson"],
+  "markalar": {
+    "uydu": [
+      {"n": "Next", "a": ["Nextstar", "Next YE", "Minix", "Kanky", "UK-660"]},
+      {"n": "Goldmaster"},
+      {"n": "Hiremco"},
+      {"n": "Sunplus"},
+      {"n": "Dreamstar"},
+      {"n": "Magbox"},
+      {"n": "Redline"},
+      {"n": "Botech"},
+      {"n": "Rose"},
+      {"n": "Wellbox"},
+      {"n": "Digimaster"},
+      {"n": "Hometech"},
+      {"n": "Starbox"},
+      {"n": "Kamosonic", "a": ["Kamasonic"]},
+      {"n": "Mirtech"},
+      {"n": "Mastertech"},
+      {"n": "Microstar"},
+      {"n": "Mersat"},
+      {"n": "Süpermax", "a": ["Supermax"]},
+      {"n": "Sencrom"},
+      {"n": "Vestel"},
+      {"n": "Grundig"},
+      {"n": "Digiturk", "a": ["beIN"]},
+      {"n": "D-Smart", "a": ["Dsmart"]},
+      {"n": "Tivibu"},
+      {"n": "TV+", "a": ["Turkcell TV"]}
+    ]
+  },
+  "kumandalar": [
+    {
+      "kat": "uydu",
+      "n": "Next",
+      "m": "UK-660 kumandası (Minix HD Punto Plus ailesi) · eksik tuşlu",
+      "s": "internet",
+      "k": [
+        ["Kanal +", "NEC", "80BF53AC", 32],
+        ["Kanal −", "NEC", "80BF4BB4", 32],
+        ["Ses +", "NEC", "80BF837C", 32],
+        ["Ses −", "NEC", "80BF9966", 32],
+        ["Sessiz", "NEC", "80BF39C6", 32],
+        ["OK", "NEC", "80BF738C", 32],
+        ["EPG", "NEC", "80BF6B94", 32],
+        ["Bilgi", "NEC", "80BF0BF4", 32],
+        ["Oynat", "NEC", "80BF1BE4", 32],
+        ["Duraklat", "NEC", "80BFE31C", 32],
+        ["Durdur", "NEC", "80BF2BD4", 32],
+        ["Sonraki", "NEC", "80BFAB54", 32],
+        ["Önceki", "NEC", "80BF639C", 32],
+        ["USB", "NEC", "80BF4AB5", 32],
+        ["Shift", "NEC", "80BF8B74", 32],
+        ["Uygulamalar", "NEC", "80BF817E", 32],
+        ["Görüntü", "NEC", "80BFC13E", 32],
+        ["1", "NEC", "80BF49B6", 32],
+        ["2", "NEC", "80BFC936", 32],
+        ["3", "NEC", "80BF33CC", 32],
+        ["4", "NEC", "80BF718E", 32],
+        ["5", "NEC", "80BFF10E", 32],
+        ["6", "NEC", "80BF13EC", 32],
+        ["7", "NEC", "80BF51AE", 32],
+        ["8", "NEC", "80BFD12E", 32],
+        ["9", "NEC", "80BF23DC", 32],
+        ["0", "NEC", "80BFE11E", 32]
+      ]
+    }
+  ]
+}

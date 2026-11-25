@@ -23,6 +23,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.webkit.WebViewAssetLoader
 import com.gunteknik.kumanda.ble.BleIrModule
+import com.gunteknik.kumanda.usb.UsbIrDongle
 import com.gunteknik.kumanda.hid.HidRemote
 import com.gunteknik.kumanda.ir.IrOutput
 import com.gunteknik.kumanda.motion.AirMouse
@@ -36,6 +37,7 @@ class MainActivity : Activity() {
     lateinit var web: WebView
     lateinit var ble: BleIrModule
     lateinit var irOut: IrOutput
+    lateinit var usbIr: UsbIrDongle
     lateinit var hid: HidRemote
     lateinit var tv: TvManager
     lateinit var airMouse: AirMouse
@@ -57,7 +59,17 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         ble = BleIrModule(this)
-        irOut = IrOutput(this, ble)
+        usbIr = UsbIrDongle(this)
+        irOut = IrOutput(this, ble, usbIr)
+        usbIr.listener = object : UsbIrDongle.Listener {
+            override fun onDongleState(connected: Boolean, name: String, message: String) {
+                emit("modul", JSONObject().put("connected", connected).put("name", name).put("message", message).put("usb", true))
+            }
+            override fun onLearned(freq: Int, timings: IntArray) {
+                emit("ogrenildi", JSONObject().put("f", freq).put("t", JSONArray(timings.toList())))
+            }
+        }
+        usbIr.start()
         hid = HidRemote(this)
         airMouse = AirMouse(this)
         tv = TvManager(this, TvEvents { host, type, data ->
@@ -135,6 +147,7 @@ class MainActivity : Activity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (intent.action == android.hardware.usb.UsbManager.ACTION_USB_DEVICE_ATTACHED) { usbIr.kontrolEt(); return }
         handleIntent(intent)
     }
 
@@ -294,6 +307,7 @@ class MainActivity : Activity() {
         hid.stop()
         tv.disconnectAll()
         ble.disconnect()
+        usbIr.stop()
         web.destroy()
         super.onDestroy()
     }

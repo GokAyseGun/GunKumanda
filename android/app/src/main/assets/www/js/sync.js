@@ -17,7 +17,7 @@
   let zamanlayici = null;
   let calisiyor = false;
 
-  const ALANLAR = ['id', 'kategori', 'marka', 'model', 'notlar', 'tuslar', 'duzen', 'klima', 'kaynak', 'etiket_foto', 'kisi_id', 'silindi'];
+  const ALANLAR = ['id', 'kategori', 'marka', 'model', 'kumanda_kodu', 'uyumlu', 'notlar', 'tuslar', 'duzen', 'klima', 'kaynak', 'etiket_foto', 'kisi_id', 'silindi'];
 
   const Senk = {
     get hazir() { return !!sb; },

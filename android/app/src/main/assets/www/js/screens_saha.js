@@ -16,7 +16,7 @@
         if (q.length < 2) { sonuc.innerHTML = ''; icerik.hidden = false; return; }
         icerik.hidden = true;
         const liste = await DB.ara(q);
-        const kayitlar = Kayit.hepsi().filter(k => Arac.sade(k.marka + ' ' + k.model + ' ' + (k.notlar || '')).includes(Arac.sade(q)));
+        const kayitlar = Kayit.hepsi().filter(k => Arac.sade([k.marka, k.model, k.notlar, k.kumanda_kodu, k.uyumlu].filter(Boolean).join(' ')).includes(Arac.sade(q)));
         sonuc.innerHTML = '';
         if (kayitlar.length) {
           sonuc.append(h('div.bolum-baslik', { text: 'Ekip kayıtları' }),
@@ -29,6 +29,7 @@
     });
 
     const araclar = [
+      ['➕', 'Kumanda ekle', 'Orijinalden oku, kaydet', () => Ekran.ac(Ekle.KumandaEkle, {})],
       ['⚡', 'Hızlı bulma', 'Markayı bilmeden aç', () => Ekran.ac(Araclar.HizliBulmaSec)],
       ['❄️', 'Klima kumandası', 'Tam kontrol paneli', () => Ekran.ac(Klima.MarkaSec)],
       ['🔎', 'Kod tarama', '256 komutu dene', () => Ekran.ac(Araclar.Tarama)],
@@ -83,7 +84,7 @@
     return h('button.satir', { on: { click: () => kumandaAc(r.id) } },
       h('div.s-ana', null,
         h('div.s-ad', { text: (markaGoster ? (DB.IKON[r.kategori] || '') + ' ' + r.marka + ' · ' : '') + (r.model || 'Genel') }),
-        h('div.s-alt', { text: r.tus + ' tuş' + (r.kaynak && r.kaynak !== 'flipper' ? ' · ' + r.kaynak : '') })),
+        h('div.s-alt', { text: r.tus + ' tuş' + (r.kaynak === 'internet' ? ' · internetten, sahada doğrulanacak' : r.kaynak && r.kaynak !== 'flipper' ? ' · ' + r.kaynak : '') })),
       h('div.s-sag', { text: '›' }));
   }
 
@@ -99,54 +100,90 @@
   }
 
   // ------------------------------------------------------------ Marka listesi
+  /** Ekip kaydının markası bu marka mı */
+  const ayniMarka = (k, ad) => Arac.sade(k.marka) === Arac.sade(ad);
+  const HIZLI = { tv: 'tv', ses: 'audio', projektor: 'projector' };
+
   function MarkaListesi(p) {
     const el = h('div');
     const arama = h('input.arama', { type: 'search', placeholder: p.ad + ' markası ara' });
     const liste = h('div');
-    el.append(arama);
+    el.append(h('button.btn.ana.blok', { text: '➕ ' + p.ad + ' kumandası ekle', style: { marginBottom: '10px' },
+      on: { click: () => Ekran.ac(Ekle.KumandaEkle, { kategori: p.kategori }) } }), arama);
     if (p.kategori === 'klima') {
-      el.append(h('button.btn.ana.blok', { text: '❄️ Klima kumandası (tam kontrol, protokolle)', style: { marginBottom: '12px' },
+      el.append(h('button.btn.blok', { text: '❄️ Klima kumandası (tam kontrol, protokolle)', style: { marginBottom: '12px' },
         on: { click: () => Ekran.ac(Klima.MarkaSec) } }));
-    }
-    if (['tv', 'ses', 'projektor'].includes(p.kategori)) {
+    } else {
       el.append(h('button.btn.blok', { text: '⚡ Markayı bilmiyorum — hızlı bulma', style: { marginBottom: '12px' },
-        on: { click: () => Ekran.ac(Araclar.HizliBulma, { liste: p.kategori === 'ses' ? 'audio' : p.kategori === 'projektor' ? 'projector' : 'tv' }) } }));
+        on: { click: () => Ekran.ac(Araclar.HizliBulma, HIZLI[p.kategori] ? { liste: HIZLI[p.kategori] } : { kategori: p.kategori }) } }));
     }
     const ekipKayit = Kayit.hepsi().filter(k => k.kategori === p.kategori);
     if (ekipKayit.length) {
-      el.append(h('div.bolum-baslik', { text: 'Ekip kayıtları' }), h('div.liste', null, ekipKayit.slice(0, 20).map(kayitSatiri)),
-        h('div.bolum-baslik', { text: 'Veritabanı' }));
+      el.append(h('div.bolum-baslik', { text: 'Ekip kayıtları' }), h('div.liste', null, ekipKayit.slice(0, 20).map(kayitSatiri)));
     }
     el.append(liste);
     let markalar = [];
+    const satir = (b) => {
+      const ekip = ekipKayit.filter(k => ayniMarka(k, b.n)).length;
+      const say = b.r.length + ekip;
+      return h('button.satir', { on: { click: () => Ekran.ac(ModelListesi, { kategori: p.kategori, marka: b }) } },
+        h('div.s-ana', null, h('div.s-ad', { text: b.n }), b.a ? h('div.s-alt', { text: b.a.join(', ') }) : null),
+        h('div.s-sag', { text: say ? (ekip ? '★' + ekip + ' · ' : '') + say + ' ›' : 'ekle ›' }));
+    };
     const ciz = () => {
       const q = Arac.sade(arama.value);
       liste.innerHTML = '';
+      const uyar = b => !q || Arac.sade(b.n + ' ' + (b.a || []).join(' ')).includes(q);
+      const tr = markalar.filter(b => b.tr && uyar(b));
+      if (tr.length && !q) {
+        liste.append(h('div.bolum-baslik', { text: 'Türkiye\'de yaygın' }), h('div.liste', null, tr.map(satir)),
+          h('div.bolum-baslik', { text: 'Tüm markalar' }));
+      }
       let harf = '';
       const parcalar = [];
       for (const b of markalar) {
-        if (q && !Arac.sade(b.n).includes(q)) continue;
+        if (!uyar(b)) continue;
         const ilk = (b.n[0] || '#').toLocaleUpperCase('tr');
         if (ilk !== harf && !q) { harf = ilk; parcalar.push(h('div.harf', { text: harf })); }
-        parcalar.push(h('button.satir', { on: { click: () => Ekran.ac(ModelListesi, { kategori: p.kategori, marka: b }) } },
-          h('div.s-ana', null, h('div.s-ad', { text: b.n })), h('div.s-sag', { text: b.r.length + ' ›' })));
+        parcalar.push(satir(b));
       }
-      liste.append(h('div.liste', null, parcalar.length ? parcalar : h('div.bos', { text: 'Marka bulunamadı' })));
+      liste.append(h('div.liste', null, parcalar.length ? parcalar : h('div.bos', null, 'Marka bulunamadı. ',
+        h('button.btn', { text: '➕ "' + arama.value.trim() + '" ekle', on: { click: () => Ekran.ac(Ekle.KumandaEkle, { kategori: p.kategori, marka: arama.value.trim() }) } }))));
     };
     arama.addEventListener('input', ciz);
-    DB.kategoriBilgi(p.kategori).then(c => { markalar = c.brands; ciz(); });
+    DB.kategoriBilgi(p.kategori).then(c => {
+      markalar = (c ? c.brands : []).slice();
+      // Yalnızca ekipte olan markalar
+      const var_ = new Set(markalar.map(b => Arac.sade(b.n)));
+      for (const k of ekipKayit) {
+        if (k.marka && !var_.has(Arac.sade(k.marka))) { var_.add(Arac.sade(k.marka)); markalar.push({ k: Arac.sade(k.marka), n: k.marka, r: [] }); }
+      }
+      markalar.sort((x, y) => x.n.localeCompare(y.n, 'tr'));
+      ciz();
+    });
     return { baslik: p.ad, el };
   }
 
   function ModelListesi(p) {
     const b = p.marka;
-    const el = h('div',
-      null,
-      h('p.not', { text: b.r.length > 1 ? 'Modeli bilmiyorsanız sırayla deneyin; çalışanı yıldızla kaydedin.' : '' }),
-      h('div.liste', null, b.r.map(r => modelSatiri({ id: r[0], kategori: p.kategori, marka: b.n, model: r[1], tus: r[2], kaynak: r[3] }))));
+    const el = h('div');
+    const ekip = Kayit.hepsi().filter(k => k.kategori === p.kategori && ayniMarka(k, b.n));
+    el.append(h('button.btn.ana.blok', { text: '➕ ' + b.n + ' kumandası ekle', style: { marginBottom: '10px' },
+      on: { click: () => Ekran.ac(Ekle.KumandaEkle, { kategori: p.kategori, marka: b.n }) } }));
     if (b.r.length > 1) {
-      el.prepend(h('button.btn.ana.blok', { text: '⚡ Bu markanın tüm modellerini sırayla dene', style: { marginBottom: '10px' },
+      el.append(h('button.btn.blok', { text: '⚡ Bu markanın tüm modellerini sırayla dene', style: { marginBottom: '10px' },
         on: { click: () => Ekran.ac(Araclar.MarkaDene, { kategori: p.kategori, marka: b }) } }));
+    }
+    if (ekip.length) el.append(h('div.bolum-baslik', { text: 'Ekip kayıtları (' + ekip.length + ')' }), h('div.liste', null, ekip.map(kayitSatiri)));
+    if (b.r.length) {
+      el.append(h('div.bolum-baslik', { text: 'Veritabanı' }),
+        h('div.liste', null, b.r.map(r => modelSatiri({ id: r[0], kategori: p.kategori, marka: b.n, model: r[1], tus: r[2], kaynak: r[3] }))));
+      if (b.r.some(r => r[3] === 'internet')) el.append(h('p.not', { text: 'İnternetten derlenen kodlar eksik olabilir. Çalışanı "✓ Bu kumanda çalıştı" ile işaretleyin; eksik tuşları kumanda menüsünden "Eksik tuşları bul" ile tamamlayın.' }));
+    }
+    if (!b.r.length && !ekip.length) {
+      el.append(h('div.bos', { text: 'Bu marka için henüz kayıtlı kumanda yok. Orijinal kumandayı okuyup ilk kaydı siz ekleyin; tüm ekipte görünür.' }),
+        h('button.btn.blok', { style: { marginTop: '10px' }, text: '⚡ Hızlı bulma ile dene',
+          on: { click: () => Ekran.ac(Araclar.HizliBulma, HIZLI[p.kategori] ? { liste: HIZLI[p.kategori] } : { kategori: p.kategori }) } }));
     }
     return { baslik: b.n, el };
   }
@@ -249,11 +286,20 @@
       }
     }
 
+    function adresli() {
+      const s = tuslar.find(x => typeof x[1] === 'string' && /^(NEC|SAMSUNG|RC5|RC6|SONY)$/.test(x[1]));
+      if (!s) return null;
+      const a = Araclar.adresCoz(s);
+      return a.aile ? a : null;
+    }
+
     async function menu() {
       const secim = await sec('Kumanda', [
         { ad: '✓ Bu kumanda çalıştı', alt: 'Ekibe bildirilir, ilk sıraya çıkar', deger: 'calisti' },
         { ad: '★ Kaydet', alt: k.yerlesik ? 'Kendi kayıtlarına ekle (isim, müşteri, foto)' : 'Bilgileri düzenle', deger: 'kaydet' },
         !k.yerlesik ? { ad: '✎ Tuşları düzenle', alt: 'İsim, sıra, ekle, sil', deger: 'duzenle' } : null,
+        { ad: '➕ Tuş ekle (kumandadan oku)', alt: 'Eksik tuşları orijinal kumandadan okut', deger: 'oku' },
+        adresli() ? { ad: '🔎 Eksik tuşları bul', alt: 'Aynı adresteki 256 komutu dene', deger: 'tara' } : null,
         { ad: '⤴ Paylaş (irplus dosyası)', deger: 'paylas' },
         !k.yerlesik ? { ad: '🗑 Sil', deger: 'sil' } : null
       ].filter(Boolean));
@@ -262,6 +308,8 @@
         if (k.yerlesik) Araclar.kaydetDiyalog(k, { calisti: true }); else tost('Kaydedildi, teşekkürler!', 'basari');
       } else if (secim === 'kaydet') Araclar.kaydetDiyalog(k);
       else if (secim === 'duzenle') Ekran.ac(Araclar.Duzenle, { kumanda: k });
+      else if (secim === 'oku') Ekran.ac(Ekle.OgrenSihirbazi, { hedef: k });
+      else if (secim === 'tara') Ekran.ac(Araclar.Tarama, Object.assign(adresli(), { hedef: k }));
       else if (secim === 'paylas') Araclar.paylas(k);
       else if (secim === 'sil') {
         if (await onay('Silinsin mi?', (k.marka || '') + ' ' + (k.model || '') + ' ekipten de silinir.', 'Sil', true)) {

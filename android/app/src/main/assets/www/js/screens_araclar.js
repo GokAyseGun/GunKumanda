@@ -24,8 +24,9 @@
   function HizliBulmaSec() {
     const el = h('div', null, h('p.not', { text: 'Markayı bilmeden cihazı açmak için bilinen yüzlerce açma/kapama kodu sırayla gönderilir. ' +
       'Cihaz tepki verince durdurun.' }), h('div.liste', null,
-      [['tv', '📺 Televizyon'], ['audio', '🔊 Ses sistemi / soundbar / amfi'], ['projector', '📽️ Projektör'], ['ac', '❄️ Klima (sabit kayıtlar)']]
-        .map(([l, ad]) => h('button.satir', { on: { click: () => Ekran.ac(HizliBulma, { liste: l }) } },
+      [['tv', '📺 Televizyon'], ['k:uydu', '📡 Uydu alıcısı (Türk markaları önce)'], ['k:tvbox', '📦 TV box / IPTV'], ['audio', '🔊 Ses sistemi / soundbar / amfi'],
+        ['projector', '📽️ Projektör'], ['k:dvr', '📹 DVR / NVR'], ['ac', '❄️ Klima (sabit kayıtlar)']]
+        .map(([l, ad]) => h('button.satir', { on: { click: () => Ekran.ac(HizliBulma, l.startsWith('k:') ? { kategori: l.slice(2) } : { liste: l }) } },
           h('div.s-ana', null, h('div.s-ad', { text: ad })), h('div.s-sag', { text: '›' })))),
       h('div.bolum-baslik', { text: 'Diğer' }),
       h('button.btn.blok', { text: 'Klima için protokol bulma (önerilen)', on: { click: () => Ekran.ac(Klima.MarkaSec) } }));
@@ -73,10 +74,16 @@
         h('button.btn', { text: 'Sonraki ›', on: { click: () => { durdur(); sonraki(); } } })),
       h('label.alan', { text: 'Otomatik hız (ms)' }), hiz);
 
-    DB.evrensel().then(u => {
+    (p.kategori ? dinamikListe(p.kategori) : DB.evrensel().then(u => {
       const grup = u[p.liste] || {};
-      sinyaller = (grup[tusAdi] || grup.Power || []).map(x => [tusAdi].concat(x));
-      if (!sinyaller.length) { el.prepend(h('div.bos', { text: 'Liste boş' })); return; }
+      return (grup[tusAdi] || grup.Power || []).map(x => [tusAdi].concat(x));
+    })).then(l => {
+      sinyaller = l;
+      if (!sinyaller.length) {
+        el.prepend(h('div.bos', { text: 'Bu tür için henüz açma kodu yok. Orijinal kumandayı okuyup ilk kaydı ekleyin.' }),
+          h('button.btn.ana.blok', { text: '➕ Kumanda ekle', on: { click: () => Ekran.ac(Ekle.KumandaEkle, { kategori: p.kategori }) } }));
+        return;
+      }
       gonder();
     });
 
@@ -92,10 +99,24 @@
 
     async function sonuc(s) {
       Senk.sahaKaydi({ calisti: true, notlar: 'Hızlı bulma: ' + (typeof s[1] === 'string' ? s[1] + ' ' + s[2] : 'ham') });
-      const benzer = await benzerleriBul(s, p.liste === 'audio' ? ['ses'] : p.liste === 'projector' ? ['projektor'] : p.liste === 'ac' ? ['klima'] : ['tv', 'uydu', 'medya', 'ekran']);
-      Ekran.ac(BulunanSonuc, { sinyal: s, benzer, kategori: p.liste === 'audio' ? 'ses' : p.liste === 'projector' ? 'projektor' : p.liste === 'ac' ? 'klima' : 'tv' });
+      const benzer = await benzerleriBul(s, p.kategori ? [p.kategori] : p.liste === 'audio' ? ['ses'] : p.liste === 'projector' ? ['projektor'] : p.liste === 'ac' ? ['klima'] : ['tv', 'uydu', 'medya', 'ekran']);
+      Ekran.ac(BulunanSonuc, { sinyal: s, benzer, kategori: p.kategori || (p.liste === 'audio' ? 'ses' : p.liste === 'projector' ? 'projektor' : p.liste === 'ac' ? 'klima' : 'tv') });
     }
     return { baslik: 'Hızlı bulma', el, ekranAcik: true, kapat: durdur };
+  }
+
+  /** Kategoriye göre açma kodu listesi: ekip kayıtları, Türk markaları, sonra diğerleri */
+  async function dinamikListe(kat) {
+    const out = [], gor = new Set();
+    const ekle = s => { const a = JSON.stringify([s[1], s[2]]); if (gor.has(a)) return; gor.add(a); out.push(['Güç'].concat(s.slice(1))); };
+    const gucBul = t => t.find(s => /^(POWER|POWER_ON)$/.test(IR.anahtar(s[0]) || ''));
+    for (const k of Kayit.hepsi()) if (k.kategori === kat) { const g = gucBul(k.tuslar || []); if (g) ekle(g); }
+    const [paket, bilgi] = await Promise.all([DB.kategori(kat), DB.kategoriBilgi(kat)]);
+    const sirali = [];
+    for (const b of (bilgi ? bilgi.brands : [])) for (const r of b.r) sirali.push([b.tr ? 0 : 1, r[0]]);
+    sirali.sort((a, b) => a[0] - b[0]);
+    for (const [, rid] of sirali) { const g = gucBul(paket.get(rid) || []); if (g) ekle(g); }
+    return out;
   }
 
   /** Aynı sinyali (ya da aynı protokol+adresi) içeren kumandaları bul */
@@ -138,10 +159,11 @@
     if (b.tam.length) el.append(h('div.bolum-baslik', { text: 'Bu kodu içeren kumandalar (' + b.tam.length + ')' }), satirlar(b.tam.slice(0, 80)));
     if (b.adres.length) el.append(h('div.bolum-baslik', { text: 'Aynı adresi kullananlar (' + b.adres.length + ')' }), satirlar(b.adres));
     if (!b.tam.length && !b.adres.length && !b.ekip.length) el.append(h('div.bos', { text: 'Veritabanında eşleşen kumanda yok. Tarama ile diğer tuşları bulun.' }));
+    el.append(h('button.btn.blok', { style: { marginTop: '14px' }, text: '➕ Orijinal kumandadan okuyarak ekle', on: { click: () => Ekran.ac(Ekle.KumandaEkle, { kategori: p.kategori }) } }));
     if (typeof s[1] === 'string' && /^(NEC|SAMSUNG|RC5|RC6|SONY)$/.test(s[1])) {
       el.append(h('button.btn.ana.blok', { style: { marginTop: '14px' }, text: '🔎 Bu adresle tüm tuşları tara', on: { click: () => {
         const ai = adresCoz(s);
-        Ekran.ac(Tarama, ai);
+        Ekran.ac(Tarama, Object.assign(ai, { bilgi: { kategori: p.kategori } }));
       } } }));
     }
     return { baslik: 'Sonuç', el };
@@ -235,9 +257,12 @@
         h('div.liste', null, Array.from(bulunan.entries()).map(([c, a]) => h('div.satir', null,
           h('div.s-ana', null, h('div.s-ad', { text: a }), h('div.s-alt.kod', { text: 'Kod ' + hex(c, 2) })),
           h('button.btn', { text: 'Dene', on: { click: () => gonder(c) } })))),
-        h('button.btn.ana.blok', { style: { marginTop: '10px' }, text: '★ Kumanda olarak kaydet', on: { click: () => {
+        h('button.btn.ana.blok', { style: { marginTop: '10px' }, text: p.hedef ? '✓ Bulunanları kumandaya ekle' : '★ Kumanda olarak kaydet', on: { click: () => {
           const tuslar = Array.from(bulunan.keys()).map(c => sinyal(c));
-          kaydetDiyalog({ kategori: 'diger', marka: '', model: '', tuslar, kaynak: 'tarama', notlar: AILE[aile].ad + ' adres ' + hex(adres, 2) });
+          if (p.hedef) return hedefeEkle(p.hedef, tuslar);
+          const b = p.bilgi || {};
+          kaydetDiyalog({ kategori: b.kategori || 'diger', marka: b.marka || '', model: b.model || '', kumanda_kodu: b.kumanda_kodu || '',
+            uyumlu: b.uyumlu || '', tuslar, kaynak: 'tarama', notlar: AILE[aile].ad + ' adres ' + hex(adres, 2) });
         } } }));
     }
     function durdur() { oto = false; clearInterval(zam); otoBtn.textContent = '▶ Otomatik tara'; }
@@ -260,7 +285,25 @@
       h('div.btn-satir', null, otoBtn, h('button.btn', { text: '‹ Bir geri', on: { click: () => { durdur(); if (sira > 0) gonder(sira - 1); } } })),
       durumYazi, sonuclar, h('div.bolum-baslik', { text: 'Komutlar' }), izgara);
     ciz();
-    return { baslik: 'Kod tarama', el, ekranAcik: true, kapat: durdur };
+    if (p.hedef) el.prepend(h('div.kutu', null, h('div', { style: { fontWeight: '700', color: 'var(--buz)' },
+      text: 'Eksik tuş arama: ' + (p.hedef.marka || '') + ' ' + (p.hedef.model || '') }),
+      h('p.not', { text: 'Kumandanın adresi otomatik girildi. Tuşları sırayla deneyin; cihaz tepki verince tuşa uzun basıp adını seçin.' })));
+    return { baslik: p.hedef ? 'Eksik tuşları bul' : 'Kod tarama', el, ekranAcik: true, kapat: durdur };
+  }
+
+  /** Var olan kumandaya tuş ekle (aynı adlı tuşların yerine geçer) */
+  function hedefeEkle(hedef, yeni) {
+    const adlar = new Set(yeni.map(s => s[0]));
+    const birlesik = (hedef.tuslar || []).filter(s => !adlar.has(s[0])).concat(yeni);
+    const ac = k => {
+      const y = Ekran.yigin[Ekran.sekme];
+      while (y.length > 1 && (y[y.length - 1].fn === Tarama || y[y.length - 1].fn === Saha.KumandaEkrani)) y.pop();
+      Ekran.ac(Saha.KumandaEkrani, { kumanda: k });
+    };
+    if (hedef.yerlesik) return kaydetDiyalog(Object.assign({}, hedef, { tuslar: birlesik }), { kaydedilince: ac });
+    const k = Kayit.kaydet(Object.assign({}, hedef, { tuslar: birlesik }));
+    tost(yeni.length + ' tuş eklendi', 'basari');
+    ac(k);
   }
 
   // ------------------------------------------------------------ Kopyalama (öğrenme)
@@ -275,12 +318,10 @@
     function durumCiz() {
       const d = IR.durum();
       durum.innerHTML = '';
-      if (!d.module) {
-        durum.append(h('div', { style: { fontWeight: '700' }, text: 'IR alıcı modülü bağlı değil' }),
-          h('p.not', { text: 'Kumanda okumak için Gün IR modülü gerekir (telefonların IR alıcısı yoktur). Modülü açıp yanına yaklaşın.' }),
-          h('button.btn.ana.blok', { text: 'Modüle bağlan', on: { click: () => { const e = Yerel.cagri('moduleConnect'); if (e) tost(e, 'hata'); } } }));
+      if (!d.canLearn) {
+        durum.append(Ekle.okuyucuKarti(durumCiz));
       } else {
-        durum.append(h('div', { style: { fontWeight: '700', color: 'var(--yesil)' }, text: '✓ ' + (d.moduleName || 'Modül') + ' bağlı' }),
+        durum.append(h('div', { style: { fontWeight: '700', color: 'var(--yesil)' }, text: '✓ ' + (d.usb ? (d.usbName || 'USB-C IR') : (d.moduleName || 'Modül')) + ' hazır' }),
           h('p.not', { text: bekleyenAd ? '"' + bekleyenAd + '" için orijinal kumandanın tuşuna modülün alıcısına doğru basın…' :
             'Yeni tuş okumak için aşağıdaki düğmeye dokunun.' }),
           h('button.btn.ana.blok', { text: bekleyenAd ? 'Bekleniyor… (iptal)' : '+ Yeni tuş oku', on: { click: oku } }));
@@ -335,9 +376,10 @@
     const k1 = Yerel.on('ogrenildi', ogrenildi);
     const k2 = Yerel.on('modul', () => durumCiz());
     cik = () => { k1(); k2(); if (bekleyenAd) Yerel.cagri('learnStop'); };
-    el.append(durum, liste);
+    el.append(h('button.btn.ana.blok', { style: { marginBottom: '12px' }, text: '🧭 Adım adım okuma sihirbazı (önerilen)',
+      on: { click: () => Ekran.ac(Ekle.KumandaEkle, {}) } }), durum, liste);
     durumCiz(); listeCiz();
-    return { baslik: 'Kumanda kopyala', el, kapat: cik, ekranAcik: true };
+    return { baslik: 'Serbest kopyalama', el, kapat: cik, ekranAcik: true };
   }
 
   // ------------------------------------------------------------ Elle kod
@@ -398,18 +440,22 @@
           const s = sinyalAl(); if (!s) return tost('Kod eksik ya da hatalı', 'hata');
           const ad = await sor('Tuş adı', null, s[0]); if (!ad) return;
           s[0] = ad;
-          kumandayaEkle(s);
+          kumandayaEkle(s, p && p.bilgi);
         } } })));
     ciz();
     return { baslik: 'Elle kod', el };
   }
 
-  async function kumandayaEkle(s) {
+  async function kumandayaEkle(s, bilgi) {
     const kayitlar = Kayit.hepsi().filter(k => !(k.klima && k.klima.protokol));
     const hedef = await sec('Hangi kumandaya?', [{ ad: '+ Yeni kumanda', deger: '__yeni' }].concat(
       kayitlar.map(k => ({ ad: (k.marka || '?') + ' ' + (k.model || ''), alt: (k.tuslar || []).length + ' tuş', deger: k.id }))));
     if (!hedef) return;
-    if (hedef === '__yeni') return kaydetDiyalog({ kategori: 'diger', marka: '', model: '', tuslar: [s], kaynak: 'elle' });
+    if (hedef === '__yeni') {
+      const b = bilgi || {};
+      return kaydetDiyalog({ kategori: b.kategori || 'diger', marka: b.marka || '', model: b.model || '', kumanda_kodu: b.kumanda_kodu || '',
+        uyumlu: b.uyumlu || '', tuslar: [s], kaynak: 'elle' });
+    }
     const k = Kayit.getir(hedef);
     k.tuslar = (k.tuslar || []).concat([s]);
     Kayit.kaydet(k);
@@ -560,6 +606,8 @@
     const yeni = !k.id || k.yerlesik;
     const marka = h('input.giris', { value: k.marka || '', placeholder: 'Marka' });
     const model = h('input.giris', { value: k.model || '', placeholder: 'Model (etiketteki)' });
+    const kumandaKodu = h('input.giris', { value: k.kumanda_kodu || '', placeholder: 'Kumandanın arkasındaki kod (ör. UK-660)' });
+    const uyumlu = h('input.giris', { value: k.uyumlu || '', placeholder: 'Aynı kumandayı kullanan modeller (virgülle)' });
     const not = h('input.giris', { value: k.notlar || '', placeholder: 'Not (ör. Dalyan villa, salon klima)' });
     const kategori = h('select.giris', null);
     DB.indeks().then(i => i.categories.forEach(c => kategori.append(h('option', { value: c.id, text: c.name, selected: c.id === (k.kategori || 'diger') }))));
@@ -587,6 +635,8 @@
       h('label.alan', { text: 'Kategori' }), kategori,
       h('label.alan', { text: 'Marka' }), marka,
       h('label.alan', { text: 'Model' }), model,
+      h('label.alan', { text: 'Kumanda kodu' }), kumandaKodu,
+      h('label.alan', { text: 'Uyumlu modeller' }), uyumlu,
       h('label.alan', { text: 'Not' }), not,
       h('div', { style: { marginTop: '12px', display: 'grid', gap: '8px' } }, kisiBtn, fotoBtn, foto),
       h('div.btn-satir', null,
@@ -594,6 +644,7 @@
         h('button.btn.ana', { text: 'Kaydet', on: { click: async () => {
           const kayit = {
             id: yeni ? null : k.id, kategori: kategori.value || k.kategori || 'diger', marka: marka.value.trim(), model: model.value.trim(),
+            kumanda_kodu: kumandaKodu.value.trim(), uyumlu: uyumlu.value.trim(),
             notlar: not.value.trim(), tuslar: k.tuslar || [], klima: k.klima || null, duzen: k.duzen || null,
             kaynak: k.yerlesik ? 'veritabani' : (k.kaynak || 'saha'), kisi_id: kisiId, etiket_foto: k.etiket_foto || null
           };
@@ -606,7 +657,8 @@
             catch (e) { tost('Fotoğraf yüklenemedi: ' + e.message, 'hata'); }
           }
           tost('Kaydedildi' + (Senk.uye ? ' ve ekiple paylaşılıyor' : ' (giriş yapınca ekiple paylaşılır)'), 'basari');
-          if (yeni && k.yerlesik) Ekran.yigin[Ekran.sekme].pop(), Ekran.ac(Saha.KumandaEkrani, { kumanda: sonuc });
+          if (secenek && secenek.kaydedilince) secenek.kaydedilince(sonuc);
+          else if (yeni && k.yerlesik) Ekran.yigin[Ekran.sekme].pop(), Ekran.ac(Saha.KumandaEkrani, { kumanda: sonuc });
         } } }))));
     return kapat;
   }

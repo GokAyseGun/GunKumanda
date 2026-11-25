@@ -6,6 +6,11 @@ okuduğu sıkıştırılmış JSON paketlerine çevirir.
 
 Kullanım:
   python3 build_db.py <Flipper-IRDB klasörü> <evrensel .ir klasörü> <çıkış klasörü>
+  python3 build_db.py --sadele <çıkış klasörü>     (yalnızca Türkiye düzenlemesini uygula)
+
+Türkiye düzenlemesi (tools/tr_markalar.json): uydu kategorisinde Türkiye'de
+satılmayan markalar çıkarılır, Türk pazarı markaları üste alınır ve internetten
+derlenen (doğrulanacak) kumandalar eklenir. Mevcut kumanda kimlikleri değişmez.
 
 Sinyal biçimi (JSON dizi):
   ["Ad", "PROTOKOL", "HEXDEĞER", bit]   -> native çekirdek (IRremoteESP8266) üretir
@@ -263,7 +268,75 @@ def brand_key(b):
     return re.sub(r'[^a-z0-9]', '', b.lower())
 
 
+TR_DOSYA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        'tr_markalar.json')
+
+
+def tr_duzenle(out, kaynak=TR_DOSYA):
+    """Türkiye pazarı düzenlemesi (tekrar uygulanabilir)."""
+    with open(kaynak, encoding='utf-8') as f:
+        tr = json.load(f)
+    with open(os.path.join(out, 'index.json'), encoding='utf-8') as f:
+        index = json.load(f)
+    tut = set(tr.get('uydu_tut', []))
+    markalar = tr.get('markalar', {})
+    for kat in index['categories']:
+        cid = kat['id']
+        tr_list = markalar.get(cid, [])
+        tr_kume = {brand_key(m['n']) for m in tr_list}
+        ek = [k for k in tr.get('kumandalar', []) if k['kat'] == cid]
+        if cid != 'uydu' and not tr_list and not ek:
+            continue
+        yol = os.path.join(out, 'cat_%s.json' % cid)
+        with open(yol, encoding='utf-8') as f:
+            paket = json.load(f)
+        brands = kat['brands']
+        # Önceki Türkiye eklerini temizle
+        paket = [x for x in paket if '-tr' not in x[0]]
+        for b in brands:
+            b['r'] = [r for r in b['r'] if '-tr' not in r[0]]
+            b.pop('tr', None)
+            b.pop('a', None)
+        if cid == 'uydu':
+            brands = [b for b in brands if b['k'] in tut or b['k'] in tr_kume]
+            kalan = {r[0] for b in brands for r in b['r']}
+            paket = [x for x in paket if x[0] in kalan]
+        harita = {b['k']: b for b in brands}
+        for m in tr_list:
+            k = brand_key(m['n'])
+            b = harita.get(k)
+            if not b:
+                b = {'k': k, 'n': m['n'], 'r': []}
+                harita[k] = b
+                brands.append(b)
+            b['n'] = m['n']
+            b['tr'] = 1
+            if m.get('a'):
+                b['a'] = m['a']
+        for i, km in enumerate(ek, 1):
+            rid = '%s-tr%d' % (cid, i)
+            k = brand_key(km['n'])
+            b = harita.get(k)
+            if not b:
+                b = {'k': k, 'n': km['n'], 'r': []}
+                harita[k] = b
+                brands.append(b)
+            b['r'].insert(0, [rid, km['m'], len(km['k']), km.get('s', 'internet')])
+            paket.append([rid, km['k']])
+        brands = [b for b in brands if b['r'] or b.get('tr')]
+        brands.sort(key=lambda b: b['n'].lower())
+        kat['brands'] = brands
+        kat['count'] = len(paket)
+        with open(yol, 'w', encoding='utf-8') as f:
+            json.dump(paket, f, separators=(',', ':'), ensure_ascii=False)
+    with open(os.path.join(out, 'index.json'), 'w', encoding='utf-8') as f:
+        json.dump(index, f, separators=(',', ':'), ensure_ascii=False)
+
+
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == '--sadele':
+        tr_duzenle(sys.argv[2])
+        return
     if len(sys.argv) < 4:
         print(__doc__)
         sys.exit(1)
@@ -350,6 +423,7 @@ def main():
                 key=lambda b: b['n'].lower())})
     with open(os.path.join(out, 'index.json'), 'w') as f:
         json.dump(index, f, separators=(',', ':'), ensure_ascii=False)
+    tr_duzenle(out)
 
     # Evrensel listeler (hızlı bulma)
     univ = {}

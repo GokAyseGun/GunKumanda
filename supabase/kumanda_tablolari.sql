@@ -149,3 +149,7 @@ revoke execute on function public.kumanda_uye() from public, anon;
 grant execute on function public.kumanda_uye() to authenticated;
 revoke execute on function public.ir_calisti_artir() from public, anon, authenticated;
 revoke execute on function public.ir_guncelleme_damgasi() from public, anon, authenticated;
+
+-- 2026-11: kumanda kodu (arkasındaki etiket) ve uyumlu modeller
+alter table public.ir_kumandalar add column if not exists kumanda_kodu text;
+alter table public.ir_kumandalar add column if not exists uyumlu text;

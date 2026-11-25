@@ -18,7 +18,7 @@
   function cipGuncelle() {
     const d = IR.durum();
     cip.className = 'cip ' + (d.active === 'none' ? 'yok' : 'var');
-    cip.textContent = d.active === 'module' ? 'IR · Modül' : d.active === 'builtin' ? 'IR · Dahili' : 'IR yok';
+    cip.textContent = d.active === 'module' ? 'IR · Modül' : d.active === 'usb' ? 'IR · USB' : d.active === 'builtin' ? 'IR · Dahili' : 'IR yok';
   }
   cip.addEventListener('click', () => { Ekran.sekmeyeGec('ayarlar'); });
   Yerel.on('modul', cipGuncelle);

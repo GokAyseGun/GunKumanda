@@ -56,7 +56,7 @@
       for (const c of i.categories) {
         if (kategori && c.id !== kategori) continue;
         for (const b of c.brands) {
-          const bAd = Arac.sade(b.n);
+          const bAd = Arac.sade(b.n + ' ' + (b.a || []).join(' '));
           const markaUyar = bAd.includes(q);
           for (const r of b.r) {
             if (markaUyar || Arac.sade(r[1]).includes(q) || Arac.sade(b.n + ' ' + r[1]).includes(q)) {

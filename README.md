@@ -8,6 +8,13 @@ Gün Teknik saha ekibi için evrensel kumanda uygulaması (Android) ve ESP32 IR 
   Yaklaşık 6.900 hazır kumanda (Flipper-IRDB + irdb + irplus dönüşümleri) internetsiz çalışır.
 - **Fotoğraf makinesi:** Canon EOS 650D (RC-6) — çek, 2 sn gecikmeli, video kaydı, zamanlayıcı, seri çekim,
   aralıklı çekim (timelapse) ve süreli uzun pozlama (bulb). Telefonun ses tuşları deklanşör olur.
+- **Kumanda ekleme:** her cihaz türü için hazır tuş listesiyle adım adım okuma sihirbazı (tuşa bas → otomatik
+  sıradakine geç, aynı sinyal uyarısı, atlama, özel tuş), marka önerileri (Türkiye listesi + ekip + veritabanı),
+  kumanda kodu ve uyumlu modeller alanları; var olan kumandaya "eksik tuş okut" ve "eksik tuşları tara".
+- **USB-C IR verici/alıcı:** ELK Smart ailesi (EKX4S, EKX5S, EKX5S-T…, USB 045C) takınca tanınır; hem gönderir
+  hem orijinal kumandaları okur.
+- **Türkiye düzenlemesi:** uydu listesinde Türkiye'de satılmayan markalar çıkarıldı; Next, Goldmaster, Hiremco,
+  Redline, Botech, Magbox, Dreamstar… üstte (`tools/tr_markalar.json`, `build_db.py --sadele`).
 - **Saha araçları:** hızlı bulma (markasız açma), markanın tüm modellerini sırayla deneme, 256 komut tarama,
   kumanda kopyalama (IR modülüyle), elle kod (adres/komut, protokol, ham, Pronto), servis/otel menüleri,
   irplus içe/dışa aktarma.

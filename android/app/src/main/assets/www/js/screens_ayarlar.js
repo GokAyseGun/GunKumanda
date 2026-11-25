@@ -86,16 +86,21 @@
         h('div.satir', { style: { background: 'var(--kart2)' } }, h('div.s-ana', null, h('div.s-ad', { text: 'Dahili IR verici' }),
           h('div.s-alt', { text: d.builtin ? 'Var' : 'Bu telefonda yok' })), h('span.rozet' + (d.builtin ? '.yesil' : ''), { text: d.builtin ? '✓' : '✕' })),
         h('div', { style: { height: '8px' } }),
+        h('div.satir', { style: { background: 'var(--kart2)' } }, h('div.s-ana', null, h('div.s-ad', { text: 'USB-C IR verici/alıcı (gönder + oku)' }),
+          h('div.s-alt', { text: d.usb ? (d.usbName || 'Bağlı') : 'Takılı değil · EKX4S / EKX5S türü' })),
+          d.usb ? h('span.rozet.yesil', { text: '✓' })
+            : h('button.btn.ana', { text: 'Kontrol et', on: { click: () => { const e = Yerel.cagri('usbCheck'); if (e) tost(e, 'hata'); setTimeout(irCiz, 800); } } })),
+        h('div', { style: { height: '8px' } }),
         h('div.satir', { style: { background: 'var(--kart2)' } }, h('div.s-ana', null, h('div.s-ad', { text: 'Gün IR modülü (gönder + oku)' }),
           h('div.s-alt', { text: d.module ? (d.moduleName || 'Bağlı') : 'Bağlı değil' })),
           d.module ? h('button.btn', { text: 'Unut', on: { click: () => { Yerel.cagri('moduleForget'); setTimeout(irCiz, 300); } } })
             : h('button.btn.ana', { text: 'Bağlan', on: { click: () => { const e = Yerel.cagri('moduleConnect'); if (e) tost(e, 'hata'); } } })));
-      const tercih = h('select.giris', null, [['auto', 'Otomatik (önce dahili)'], ['builtin', 'Dahili verici'], ['module', 'Modül']]
+      const tercih = h('select.giris', null, [['auto', 'Otomatik (dahili > USB > modül)'], ['builtin', 'Dahili verici'], ['usb', 'USB-C verici'], ['module', 'Modül']]
         .map(([v, a]) => h('option', { value: v, text: a, selected: Ayar.get('irCikis', 'auto') === v })));
       tercih.addEventListener('change', () => { Ayar.set('irCikis', tercih.value); Yerel.cagri('irSetOutput', tercih.value); });
       ir.append(h('label.alan', { text: 'Gönderim için kullan' }), tercih,
         h('button.btn.blok', { style: { marginTop: '10px' }, text: '▶ Test sinyali gönder (NEC)', on: { click: () => IR.gonder(['Test', 'NEC', '00FFA25D', 32]) } }));
-      if (!d.builtin && !d.module) ir.prepend(h('div.uyari', { text: 'Bu telefonda IR verici yok. Saha kumandası için Gün IR modülünü bağlayın (Yardım bölümünde parça listesi var). Akıllı TV kısmı modülsüz çalışır.' }));
+      if (!d.builtin && !d.module && !d.usb) ir.prepend(h('div.uyari', { text: 'Bu telefonda IR verici yok. USB-C kızılötesi verici/alıcı takın (EKX4S / EKX5S türü) ya da Gün IR modülünü bağlayın. Akıllı TV kısmı bunlarsız çalışır.' }));
     }
     const irDinle = Yerel.on('modul', v => { irCiz(); if (v.message) tost(v.message); });
 
@@ -115,7 +120,7 @@
       ...bolum('Yardım',
         h('button.btn.blok', { text: '📺 Android TV yardımcısı kurulumu', on: { click: () => Ekran.ac(Yardim, { konu: 'tv' }) } }),
         h('div', { style: { height: '8px' } }),
-        h('button.btn.blok', { text: '🔌 Gün IR modülü (parça listesi)', on: { click: () => Ekran.ac(Yardim, { konu: 'modul' }) } }),
+        h('button.btn.blok', { text: '🔌 USB-C IR alıcı / Gün IR modülü', on: { click: () => Ekran.ac(Yardim, { konu: 'modul' }) } }),
         h('div', { style: { height: '8px' } }),
         h('button.btn.blok', { text: '📜 Lisanslar ve kaynaklar', on: { click: () => Ekran.ac(Yardim, { konu: 'lisans' }) } })),
       h('p.not.ortala', { style: { marginTop: '18px' }, text: 'Gün Kumanda ' + ((Yerel.json('info') || {}).version || '') + ' · Gün Teknik' }));
@@ -163,6 +168,12 @@
         P('Yardımcı olmadan da Bluetooth fare/klavye modu her TV\'de çalışır.')));
     } else if (p.konu === 'modul') {
       el.append(h('div.kutu', null,
+        h('div', { style: { fontWeight: '700' }, text: 'Önerilen: USB-C IR verici/alıcı' }),
+        P('Hazır ürün: EKX4S, EKX5S, EKX5S-T gibi "ELK Smart / Smart IR" adaptörleri (USB kimliği 045C). Telefona takınca uygulama kendiliğinden tanır; ' +
+          'Android izin sorarsa onaylayın. Hem sinyal gönderir hem orijinal kumandaları okur (kopyalar).'),
+        P('Alırken ilanda "öğrenme / learning" özelliği yazdığından emin olun; yalnızca verici olan sürümler kumanda okuyamaz. ' +
+          'Oppo/Vivo gibi bazı telefonlarda Ayarlar\'dan OTG\'yi açmak gerekir.')),
+        h('div.kutu', null,
         h('div', { style: { fontWeight: '700' }, text: 'Gün IR modülü' }),
         P('IR vericisi olmayan telefonlarda sinyal göndermek ve tüm telefonlarda orijinal kumandaları okumak (kopyalamak) için.'),
         P('Parçalar: ESP32-C3 SuperMini (ya da herhangi bir ESP32), 2 adet 940 nm IR LED, 1 adet NPN transistör (S8050 / 2N2222), ' +

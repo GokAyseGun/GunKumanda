@@ -116,10 +116,13 @@ class Bridge(private val a: MainActivity) {
     fun moduleForget() = a.ble.forget()
 
     @JavascriptInterface
-    fun learnStart(seconds: Int): String = a.ble.startLearning(seconds) ?: ""
+    fun learnStart(seconds: Int): String = a.irOut.learnStart(seconds) ?: ""
 
     @JavascriptInterface
-    fun learnStop() = a.ble.stopLearning()
+    fun learnStop() = a.irOut.learnStop()
+
+    @JavascriptInterface
+    fun usbCheck(): String = a.usbIr.kontrolEt() ?: ""
 
     // ---------------------------------------------------------------- akıllı TV
     @JavascriptInterface
