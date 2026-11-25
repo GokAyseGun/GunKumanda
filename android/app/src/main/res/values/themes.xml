@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.GunKumanda" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/arkaplan</item>
+        <item name="android:statusBarColor">@color/arkaplan</item>
+        <item name="android:navigationBarColor">@color/arkaplan</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

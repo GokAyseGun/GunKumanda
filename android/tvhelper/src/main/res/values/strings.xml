@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gün Kumanda TV Yardımcısı</string>
+    <string name="aciklama">Telefondaki Gün Kumanda uygulamasının imlecini (havada fare / dokunmatik alan) bu TV\'de gösterir ve tıklar.</string>
+</resources>

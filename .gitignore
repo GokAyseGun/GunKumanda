@@ -1,0 +1,11 @@
+.gradle/
+build/
+build_test/
+build_c3/
+build_32/
+cikti/
+local.properties
+.idea/
+*.iml
+.cxx/
+.externalNativeBuild/

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Gün Kumanda</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app">
+  <header id="ust">
+    <button id="geri" class="ikon-btn" aria-label="Geri" hidden>&#8592;</button>
+    <div id="baslik">Gün Kumanda</div>
+    <button id="ir-durum" class="cip" aria-label="IR durumu">IR</button>
+  </header>
+  <main id="ekran"></main>
+  <nav id="alt">
+    <button data-sekme="saha" class="sekme aktif"><span class="s-ikon">&#9673;</span><span>Saha</span></button>
+    <button data-sekme="akilli" class="sekme"><span class="s-ikon">&#9638;</span><span>Akıllı TV</span></button>
+    <button data-sekme="kayitlar" class="sekme"><span class="s-ikon">&#9733;</span><span>Kayıtlar</span></button>
+    <button data-sekme="ayarlar" class="sekme"><span class="s-ikon">&#9881;</span><span>Ayarlar</span></button>
+  </nav>
+</div>
+<div id="katman"></div>
+<div id="bildirim"></div>
+<script src="lib/supabase.js"></script>
+<script src="js/native.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/data.js"></script>
+<script src="js/ir.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/screens_saha.js"></script>
+<script src="js/screens_klima.js"></script>
+<script src="js/screens_araclar.js"></script>
+<script src="js/screens_akilli.js"></script>
+<script src="js/screens_ayarlar.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
