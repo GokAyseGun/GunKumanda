@@ -109,7 +109,9 @@
     el.append(
       ...bolum('Hesap ve ekip', hesap),
       ...bolum('IR çıkışı', ir),
-      ...bolum('Genel', anahtarK('Tuşa basınca titreşim', 'titresim', true)),
+      ...bolum('Genel', anahtarK('Tuşa basınca titreşim', 'titresim', true),
+        h('button.btn.blok', { style: { marginTop: '10px' }, text: '⬇ Güncelleme / dosyalar (GitHub)', on: { click: () =>
+          Yerel.cagri('openUrl', 'https://github.com/GokAyseGun/GunKumanda/releases/latest') } })),
       ...bolum('Yardım',
         h('button.btn.blok', { text: '📺 Android TV yardımcısı kurulumu', on: { click: () => Ekran.ac(Yardim, { konu: 'tv' }) } }),
         h('div', { style: { height: '8px' } }),
@@ -154,7 +156,7 @@
       el.append(h('div.kutu', null,
         h('div', { style: { fontWeight: '700' }, text: 'Gün Kumanda TV Yardımcısı' }),
         P('Android / Google TV\'lerde telefonun dokunmatik alanı ve havada faresi ağ üzerinden imleç olarak çalışsın diye TV\'ye kurulan küçük uygulama.'),
-        P('1. GitHub\'daki derlemeden "tvhelper" APK dosyasını indirin (Ayarlar > Hakkında bağlantısı) ya da USB belleğe kopyalayın.'),
+        P('1. Ayarlar > "Güncelleme / dosyalar" sayfasından GunKumanda-TV-Yardimcisi.apk dosyasını indirip USB belleğe kopyalayın.'),
         P('2. TV\'de "Bilinmeyen kaynaklar"a izin verip dosya yöneticisiyle kurun (ya da "Send Files to TV" uygulamasıyla gönderin).'),
         P('3. TV\'de uygulamayı açın, Erişilebilirlik ayarlarından "Gün Kumanda TV Yardımcısı" servisini etkinleştirin.'),
         P('4. Telefonda TV\'ye bağlanın: Fare sekmesi otomatik olarak imleci gösterir.'),
